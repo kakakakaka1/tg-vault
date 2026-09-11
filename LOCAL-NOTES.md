@@ -199,7 +199,14 @@ image.rar.li/library/tg-vault-backend:latest    sha256:652cfd828713e61ac434d617d
 image.rar.li/library/tg-vault-frontend:latest   sha256:1268a6c31baad6f59ea92a5d25529a2c3bf380e59864fe6f5d198f4850170de5
 ```
 
-`postgres` 仍用 Docker Hub 官方镜像（按 digest 固定版本），新机器需能访问 Docker Hub。
+`postgres` 也已镜像到私有仓库（`image.rar.li/library/postgres:16`，
+来源为官方 `postgres@sha256:cf78e766...`）。
+
+**至此三个镜像全部来自私有仓库，新机器 `docker compose up -d` 不依赖 Docker Hub。**
+
+**实测**：`docker compose down` → 删光本地全部镜像（含 postgres）→ `docker compose up -d`
+→ 三个镜像全部从私有仓库拉取、postgres 数据完好（`files` 表记录数不变）、
+`data/app` 属主自愈为 `1000:1000`、三容器 healthy。
 
 ### 6.2 后端入口脚本修属主（`backend/docker-entrypoint.sh`）
 

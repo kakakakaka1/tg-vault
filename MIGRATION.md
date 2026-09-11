@@ -20,8 +20,9 @@ docker compose ps
 curl -s http://127.0.0.1:51947/health
 ```
 
-新机器需要：Docker + Docker Compose、能访问 `image.rar.li` 与 Docker Hub
-（后者用于拉 `postgres` 基础镜像）。私有仓库需要认证时先登录一次：
+新机器只需要：Docker + Docker Compose、能访问 `image.rar.li`。
+**三个镜像（前端、后端、数据库）全部已镜像到私有仓库，不依赖 Docker Hub。**
+私有仓库需要认证时先登录一次：
 
 ```bash
 docker login image.rar.li -u admin -p '<密码>'
@@ -48,13 +49,14 @@ docker login image.rar.li -u admin -p '<密码>'
 |---|---|---|
 | `frontend` | React 静态站点（nginx） | `127.0.0.1:47832` |
 | `backend` | API 与 Telegram 服务 | `127.0.0.1:51947` |
-| `postgres` | 数据库（官方镜像，按 digest 固定版本） | 仅容器网络内 |
+| `postgres` | 数据库（官方 postgres 的镜像副本，存于私有仓库） | 仅容器网络内 |
 
 镜像来源：
 
 - `image.rar.li/library/tg-vault-backend:latest`（自建，已推私有仓库）
 - `image.rar.li/library/tg-vault-frontend:latest`（自建，已推私有仓库）
-- `postgres@sha256:cf78e766...`（Docker Hub 官方镜像，按 digest 固定）
+- `image.rar.li/library/postgres:16`（官方 postgres 镜像的镜像副本；
+  原始来源 `postgres@sha256:cf78e766...`，已镜像到私有仓库以便离线迁移）
 
 ## 五、文件属主（不用你操心，但要知道）
 
