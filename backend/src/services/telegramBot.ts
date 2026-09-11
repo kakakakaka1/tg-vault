@@ -10,6 +10,7 @@ import { passwordInputState, isAuthenticatedAsync, loadAuthenticatedUsers, persi
 import { is2FAEnabled, generateOTPAuthUrl, verifyTOTP, activate2FA } from '../utils/security.js';
 import { handleStart, handleHelp, handleNotifications, handleNotificationsCallback, handleStatus, handleStorage, handleStorageSwitch, handleStorageSwitchCallback, handleTarget, handleTargetCallback, handleFind, handleList, handleDelete, handleDeleteConfirmCallback, handleTelegramFileBrowserCallback, applyPendingTelegramFileMutation, handleTasks, handleTaskCenterCallback, handleBulkTaskCancelCallback, handleStopTasks, handlePauseTasks, handleResumeTasks, handleCancelTask, handleChannelTaskQueueCallback, handleRetryFailedTasks, handleDownloadWorkers, handleDownloadWorkersCallback, handleFileConcurrency, handleFileConcurrencyCallback, handleStorageCleanupCallback, handlePathRules, handlePathOnce, handlePathSession, handlePathClear, handlePathRulesCallback, handleDuplicateMode, handleDuplicateModeCallback, handleCleanupSettings, handleCleanupSettingsCallback } from './telegramCommands.js';
 import { handleFileUpload, handleCleanupCallback, pauseDownloadTasks, resumeDownloadTasks, resolveTaskChatIdForControl, refreshSilentProgress, cancelSilentTask, canControlTask, listFailedDownloadTaskDetails, retryFailedDownloadTasks, loadFileDownloadConcurrencySetting } from './telegramUpload.js';
+import { archiveTextMessage, isTextArchiveEnabled, isTextArchiveReplyEnabled } from './telegramTextArchive.js';
 
 import { enqueueTelegramNotification, flushTelegramNotificationDigest, listTelegramNotificationDigestScopes, resolveNotificationOwnerUserId } from './telegramNotificationDelivery.js';
 import { DEFAULT_LOCALE, TELEGRAM_LOCALES, t, type TelegramLocale } from '../i18n/telegram.js';
@@ -2141,9 +2142,22 @@ export async function initTelegramBot(credentialsOverride?: TelegramBotCredentia
                     // 处理文件上传
                     await handleFileUpload(client, event);
                 }
-                // Unauthenticated User Text
-                if (!(await isAuthenticatedAsync(senderId)) && text && !text.startsWith('/')) {
-                    await message.reply({ message: MSG.UNKNOWN_TEXT });
+
+                // 纯文本消息归档：非命令、无媒体、且没有待处理的交互状态（避免把 2FA 验证码写进归档）
+                if (!message.media && text && !text.startsWith('/')) {
+                    if (!(await isAuthenticatedAsync(senderId))) {
+                        // Unauthenticated User Text
+                        await message.reply({ message: MSG.UNKNOWN_TEXT });
+                    } else if (isTextArchiveEnabled() && !userStates.get(senderId)) {
+                        const archived = await archiveTextMessage(client, event);
+                        if (isTextArchiveReplyEnabled()) {
+                            if (archived.saved) {
+                                await message.reply({ message: `📝 已归档文本：${archived.fileName}` });
+                            } else if (archived.error) {
+                                await message.reply({ message: `⚠️ 文本归档失败：${archived.error}` });
+                            }
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('🤖 处理消息时发生意外错误:', error);

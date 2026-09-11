@@ -3,7 +3,7 @@ name: tg-vault
 services:
   # 前端（暴露到宿主机供 Nginx 反代）
   frontend:
-    image: tg-vault-frontend:${IMAGE_VERSION:-source}
+    image: image.rar.li/library/tg-vault-frontend:${IMAGE_VERSION:-latest}
     build:
       context: ./frontend
       sbom: true
@@ -35,7 +35,7 @@ services:
 
   # 后端（暴露到宿主机供 Nginx 反代）
   backend:
-    image: tg-vault-backend:${IMAGE_VERSION:-source}
+    image: image.rar.li/library/tg-vault-backend:${IMAGE_VERSION:-latest}
     build:
       context: ./backend
       sbom: true
@@ -83,6 +83,9 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - TELEGRAM_REQUIRED=${TELEGRAM_REQUIRED:-false}
+      # 本地新增：纯文本消息归档开关
+      - TELEGRAM_TEXT_ARCHIVE=${TELEGRAM_TEXT_ARCHIVE:-true}
+      - TELEGRAM_TEXT_ARCHIVE_REPLY=${TELEGRAM_TEXT_ARCHIVE_REPLY:-true}
       - TELEGRAM_API_ID=${TELEGRAM_API_ID:-}
       - TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-}
       - TELEGRAM_ALLOWED_USER_IDS=${TELEGRAM_ALLOWED_USER_IDS:-}
@@ -122,7 +125,7 @@ services:
       - WEBDAV_UPLOAD_TIMEOUT_MS=${WEBDAV_UPLOAD_TIMEOUT_MS:-21600000}
       - TOTP_SECRET=${TOTP_SECRET:-}
     volumes:
-      - file-storage:/data
+      - ./data/app:/data
     networks:
       - tg-vault-network
     restart: unless-stopped
@@ -148,7 +151,7 @@ services:
       - POSTGRES_USER=tgvault
       - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - tg-vault-network
@@ -164,12 +167,6 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
-
-volumes:
-  file-storage:
-    driver: local
-  postgres-data:
-    driver: local
 
 networks:
   tg-vault-network:

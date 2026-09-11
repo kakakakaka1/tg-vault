@@ -27,7 +27,8 @@ LABEL org.opencontainers.image.revision=$SOURCE_REVISION \
 WORKDIR /app
 
 # 安装 sharp 需要的依赖 和 ffmpeg (用于视频处理)
-RUN apk add --no-cache vips-dev ffmpeg ca-certificates curl
+# su-exec：入口脚本降权到 node 用户（官方 postgres/redis 镜像同款）
+RUN apk add --no-cache vips-dev ffmpeg ca-certificates curl su-exec
 
 # 复制依赖
 COPY package*.json ./
@@ -45,8 +46,10 @@ RUN mkdir -p /data/uploads /data/thumbnails /data/previews
 # 设置权限
 RUN chown -R node:node /app /data
 
-USER node
+# 入口脚本以 root 起步修正 bind mount 属主，再用 su-exec 降权到 node
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 51947
 
-CMD ["node", "dist/index.js"]
+ENTRYPOINT ["/docker-entrypoint.sh"]

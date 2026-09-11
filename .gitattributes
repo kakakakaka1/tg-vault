@@ -1,0 +1,20 @@
+# 统一换行符：本项目的容器与脚本都在 Linux 上运行，
+# shell 脚本一旦被签出成 CRLF，在容器内会因 `#!/bin/sh\r` 直接执行失败。
+* text=auto eol=lf
+
+*.sh   text eol=lf
+Dockerfile text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.sql  text eol=lf
+
+# 二进制文件不做换行转换
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
